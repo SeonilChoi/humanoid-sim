@@ -1,0 +1,11 @@
+{
+  "created_at": "2026-11-20T06:40:44.069248+00:00",
+  "library": "skrl",
+  "metadata": {
+    "agent": "skrl_cfg_entry_point",
+    "algorithm": "ppo",
+    "ml_framework": "torch"
+  },
+  "task": "Arti-H1-Olaf-Walk-v0",
+  "version": 1
+}

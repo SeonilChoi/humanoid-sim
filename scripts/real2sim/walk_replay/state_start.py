@@ -16,7 +16,7 @@ from isaaclab.app import AppLauncher
 ap = argparse.ArgumentParser(); ap.add_argument("--checkpoint", required=True); ap.add_argument("--tag", default="nominal")
 ap.add_argument("--per_start", type=int, default=8); ap.add_argument("--horizon", type=float, default=3.0)
 ap.add_argument("--every", type=float, default=2.0); ap.add_argument("--max_envs", type=int, default=512)
-ap.add_argument("--logs", nargs="+", default=[f"/opt/isaac/projects/humanoid_controller_olaf/arti_h1_olaf_run_20261121_{x}.csv"
+ap.add_argument("--logs", nargs="+", default=[f"data/real_logs/arti_h1_olaf_run_20261121_{x}.csv"
                                               for x in ("095329", "095641", "100031")])
 AppLauncher.add_app_launcher_args(ap); args, _ = ap.parse_known_args(); app = AppLauncher(args)
 import gymnasium as gym, torch, numpy as np, pandas as pd, math

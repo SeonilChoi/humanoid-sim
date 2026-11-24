@@ -5,7 +5,7 @@ yaw slip (estimated as torso yaw - stance hip yaw over the single-support window
 true foot yaw is printed alongside to validate it). Distributions over the strides that end > 2 s before a fall
 ('steady') and over the last 3 strides before each fall ('pre-fall')."""
 import sys, numpy as np, pandas as pd
-CTRL = "/opt/isaac/projects/humanoid_controller_olaf/arti_h1_olaf_run_20261121_{}.csv"
+CTRL = "data/real_logs/arti_h1_olaf_run_20261121_{}.csv"
 FEAT = ["pitch_rng", "roll_rng", "gz_pk", "gx_pk", "hy_act_rng", "slip_est", "slip_true", "knee_act_sat"]
 
 

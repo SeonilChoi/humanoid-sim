@@ -4,7 +4,7 @@ in single support, the torso pitch / roll change over 4 control steps vs the rig
 (link = encoder - c tau). Real 11-21: corr 0.28 / -0.35 -> 0.89 / 0.91 with c hip_roll 0.021, ankle_pitch 0.016.
   python scripts/real2sim/walk_replay/compliance_fit.py <rigid_raw.npz> [other_raw.npz ...]"""
 import sys, numpy as np, pandas as pd
-CTRL = "/opt/isaac/projects/humanoid_controller_olaf/arti_h1_olaf_run_20261121_{}.csv"
+CTRL = "data/real_logs/arti_h1_olaf_run_20261121_{}.csv"
 CH = {"pitch": (("hip_pitch", "knee", "ankle_pitch"), 1), "roll": (("hip_roll", "ankle_roll"), 0)}
 SW = {"left": (0.10, 0.34), "right": (0.60, 0.84)}
 

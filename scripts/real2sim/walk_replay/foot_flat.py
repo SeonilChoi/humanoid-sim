@@ -6,7 +6,7 @@ error (ankle) in the real robot as the policy sees it.
 import argparse, os
 from isaaclab.app import AppLauncher
 ap = argparse.ArgumentParser(); ap.add_argument("--n", type=int, default=512)
-ap.add_argument("--logs", nargs="+", default=[f"/opt/isaac/projects/humanoid_controller_olaf/arti_h1_olaf_run_20261121_{x}.csv"
+ap.add_argument("--logs", nargs="+", default=[f"data/real_logs/arti_h1_olaf_run_20261121_{x}.csv"
                                               for x in ("095329", "095641", "100031")])
 AppLauncher.add_app_launcher_args(ap); args, _ = ap.parse_known_args(); app = AppLauncher(args)
 import gymnasium as gym, torch, numpy as np, pandas as pd

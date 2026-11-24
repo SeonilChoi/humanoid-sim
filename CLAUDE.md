@@ -45,26 +45,26 @@ from the work of 2026-11-17 to 11-24.
 
 | What | Where |
 |---|---|
-| Past runs (checkpoints, TensorBoard) | `/opt/isaac/projects/arti_h1_olaf/logs/skrl/olaf_{walk,stand}/` (not in humanoid_sim) |
+| Past runs (selected checkpoints, params, TensorBoard) | `logs/skrl/olaf_{walk,stand}/` in this repo (force-added: `logs/` is in .gitignore, so `git add -f`). All checkpoints of these runs are still in `/opt/isaac/projects/arti_h1_olaf/logs/skrl/` on the dev PC |
 | Controller worktree | `/opt/isaac/projects/humanoid_controller_olaf` (branch `arti-h1-olaf`, remote SeonilChoi/humanoid_controller) |
 | Controller config / ONNX | `config/robot/ARTI-H1/robot_olaf.yaml`, `agent_olaf_*.onnx`, `olaf_walk_keys.yaml` |
 | Robot PC | Jetson Orin `~/humanoid_controller_olaf`. The C++ build works only there; the dev PC lacks yaml-cpp and onnxruntime |
-| Real logs | `arti_h1_olaf_run_<YYYYMMDD_HHMMSS>.csv`. Removed from the working tree by commit 6af2da5 (11-24). Recover with `git -C /opt/isaac/projects/humanoid_controller_olaf show 42ad823:arti_h1_olaf_run_20261123_132540.csv > /tmp/...` (the 11-21 logs are in the same commit). The 11-20 logs are in commits around 61fd3ad |
+| Real logs | `data/real_logs/arti_h1_olaf_run_<YYYYMMDD_HHMMSS>.csv`: all 12 Olaf robot runs (11-20 x7, 11-21 x4, 11-23 x1), taken from the controller history (removed there by commit 6af2da5). Hard floor: 11-21 095329 / 095641 / 100031, 11-23 132540; 11-21 095050 is carpet. Run the replay scripts from the repo root (their defaults are `data/real_logs/...`) |
 | Log columns | `t, phase, obs_0..79, q_des_*, action_*, pos_/vel_/tau_/temp_<joint>, imu_q*, imu_g*, imu_a*, olaf_walk, est_x..est_vz, g0..g2`. g0, g1, g2 = path vx, vy, yaw rate. obs_3..8 = rot6 of the estimated attitude relative to the path frame; heading relative to the path = atan2(obs_5, obs_3) |
 
 Checkpoints:
 
-| Name | Path (under arti_h1_olaf/logs/skrl/) |
+| Name | Path (under logs/skrl/) |
 |---|---|
 | walk_09 | `olaf_walk/2026-11-18_09-03-50_ppo_torch/checkpoints/agent_1944000.pt` |
 | walk_10 | `olaf_walk/2026-11-20_15-40-44_ppo_torch/checkpoints/agent_480000.pt` |
 | walk_11 | `olaf_walk/2026-11-21_12-07-56_ppo_torch/checkpoints/agent_480000.pt` |
 | walk_12 | `olaf_walk/2026-11-22_17-06-20_ppo_torch/checkpoints/agent_480000.pt` |
 | **walk_13 (deployed)** | `olaf_walk/2026-11-23_14-51-56_ppo_torch/checkpoints/agent_480000.pt` |
-| stand_07 (smooth) | `olaf_stand/2026-11-20_13-25-38_ppo_torch/checkpoints/agent_{72000,96000}.pt` |
+| stand_07 (smooth) | `olaf_stand/2026-11-20_13-25-38_ppo_torch/checkpoints/agent_{72000,96000}.pt` (72000 ran on the robot as `agent_olaf_stand_smooth_72000.onnx`) |
 | stand stage 3 | `olaf_stand/server_stage3/checkpoints/agent_480000.pt` (no tremor on the robot) |
 | stand stage 4 | `olaf_stand/server_stage4/checkpoints/agent_264000.pt` (8.8 Hz tremor on the robot) |
-| **stand stage 5 (deployed)** | `olaf_stand/server_stage5/checkpoints/agent_480000.pt`. Its `params/` is a copy of stage 4's, for export only (NOTE.txt) |
+| **stand stage 5 (deployed)** | `olaf_stand/server_stage5/checkpoints/agent_{240000,480000}.pt`. Its `params/` is a copy of stage 4's, for export only (NOTE.txt). Server stages have no TensorBoard files here |
 
 ## 4. Evaluation metrics and acceptance criteria
 
