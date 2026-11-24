@@ -29,6 +29,7 @@ import warp as wp
 
 wp.config.enable_backward = False
 
+import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
 from isaaclab.app import add_launcher_args, launch_simulation  # noqa: E402
@@ -197,6 +198,25 @@ def _log_push_frame(env, cam):
     env._push_rows.append((t, *p, *eye, *look, arrow[0] if on else 0.0, arrow[1] if on else 0.0, yaw))
 
 
+def _log_leg_poses(env):
+    """One row per policy step (= one video frame): env 0 leg link poses in the pelvis frame, for the shell clearance
+    overlay (scripts/eval/exterior_overlay.py)."""
+    from isaaclab.utils.math import matrix_from_quat
+
+    from humanoid_sim.utils.exterior import LEG_LINKS
+
+    if not hasattr(env, "_leg_rows"):
+        names = list(env.robot.data.body_names)
+        env._leg_ids = ([names.index(n) for n in LEG_LINKS], names.index("pelvis"))
+        env._leg_rows = []
+    ids, ip = env._leg_ids
+    pos = env.robot.data.body_link_pos_w.torch[0]
+    Rw = matrix_from_quat(env.robot.data.body_link_quat_w.torch[0])
+    RpT = Rw[ip].T
+    env._leg_rows.append((float(env.episode_length_buf[0].item()) * env.step_dt, (RpT @ Rw[ids]).cpu().numpy(),
+                          ((pos[ids] - pos[ip]) @ RpT.T).cpu().numpy(), env.g[0].cpu().numpy().copy()))
+
+
 def _overwrite_observation_commands(obs, command_obs: torch.Tensor):
     """Keep policy observations consistent after overriding environment commands."""
     if isinstance(obs, torch.Tensor):
@@ -243,6 +263,14 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--video_height", type=int, default=1080, help="Recorded video height in pixels.")
     parser.add_argument("--no_push", action="store_true", default=False, help="Disable the scheduled play pushes.")
     parser.add_argument("--camera_follow", action="store_true", default=False, help="Move the video camera with the robot.")
+    parser.add_argument("--exterior", action="store_true", default=False,
+                        help="Show the Togepi exterior shell on the pelvis (visual only; humanoid_sim/utils/exterior.py).")
+    parser.add_argument("--camera_fixed", action="store_true", default=False,
+                        help="Olaf: fixed wide camera at the start position (does not follow the robot).")
+    parser.add_argument("--exterior_cut", action="store_true", default=False,
+                        help="With --exterior: cut away the half of the shell facing the camera (legs visible), turn the "
+                             "camera with the robot yaw and log env 0 leg poses (exterior_frames.npz, for "
+                             "scripts/eval/exterior_overlay.py).")
     parser.add_argument("--camera", choices=("side", "front"), default="side", help="Video camera: side or front (velocity task).")
     parser.add_argument("--zero_action", action="store_true", default=False, help="Send zero actions (PD hold of the default pose) with a zero command; shows the standing pose.")
     parser.add_argument("--dr_step", type=int, default=-1, help="Olaf: play at the training DR level of this step (default: the final DR of the Play cfg).")
@@ -318,16 +346,34 @@ def main(argv: list[str] | None = None) -> None:
             # with --camera_follow the offset rides along with the robot root, so it can sit closer
             env_cfg.viewer.eye = (1.1, 0.0, 0.4) if args_cli.camera_follow else (2.6, 0.0, 0.7)
             env_cfg.viewer.lookat = (0.0, 0.0, 0.18)
+            if olaf and args_cli.exterior and args_cli.camera_follow:  # close and low, as the side exterior view
+                env_cfg.viewer.eye = (0.75, 0.15, 0.22)
+                env_cfg.viewer.lookat = (0.0, 0.0, 0.14)
+            if olaf and args_cli.camera_fixed:  # fixed in front of the start position (the robot first walks toward it)
+                env_cfg.viewer.eye = (2.0, 0.0, 0.6)
+                env_cfg.viewer.lookat = (0.3, 0.0, 0.2)
         else:
             env_cfg.viewer.eye = (0.0, -1.6, 0.55) if velocity else VIDEO_CAMERA_EYE
             env_cfg.viewer.lookat = (0.0, 0.0, 0.15) if velocity else VIDEO_CAMERA_LOOKAT
             if olaf:  # follow from the side, close (the KB robot is ~0.6 m tall)
                 env_cfg.viewer.eye = (0.0, -1.0, 0.45)
                 env_cfg.viewer.lookat = (0.0, 0.0, 0.28)
+            if olaf and args_cli.exterior:  # closer and lower: the feet and the shell's skirt
+                env_cfg.viewer.eye = (0.15, -0.75, 0.22)
+                env_cfg.viewer.lookat = (0.0, 0.0, 0.14)
+            if olaf and args_cli.camera_fixed:  # wide, fixed at the start position: the whole play sequence stays in view
+                env_cfg.viewer.eye = (0.3, -1.7, 0.6)
+                env_cfg.viewer.lookat = (0.3, 0.0, 0.2)
         env_cfg.viewer.resolution = (args_cli.video_width, args_cli.video_height)
     pre_launch_video_config(env_cfg, args_cli)
 
     with launch_simulation(env_cfg, args_cli), contextlib.ExitStack() as cleanup:
+        if args_cli.exterior:  # robot asset with the shell under the pelvis (visual only)
+            from humanoid_sim.utils.exterior import build_exterior_robot_usd
+
+            cut = ("front" if args_cli.camera == "front" else "side") if args_cli.exterior_cut else None
+            env_cfg.scene.robot.spawn = env_cfg.scene.robot.spawn.replace(usd_path=build_exterior_robot_usd(cut=cut))
+            print(f"[exterior] robot spawn: {env_cfg.scene.robot.spawn.usd_path}")
         runner_cls = import_skrl_runner(args_cli.ml_framework)
         apply_env_overrides(args_cli, env_cfg)
         args_cli.seed = resolve_seed(args_cli.seed)
@@ -384,19 +430,34 @@ def main(argv: list[str] | None = None) -> None:
             if not args_cli.no_push:
                 _apply_play_pushes(command_env, args_cli.push_scale)
             states = env.state()
+            if args_cli.exterior:
+                _log_leg_poses(command_env)
             if follow is not None:
                 # asset_root viewer tracking does not move the recording camera in 3.x: follow the root by hand
                 root = command_env.robot.data.root_pos_w.torch[0].tolist()
                 eye, look = follow
+                if args_cli.exterior_cut:  # the cut is in the pelvis frame: turn the camera offset with the yaw
+                    qx, qy, qz, qw = command_env.robot.data.root_quat_w.torch[0].tolist()
+                    yaw = math.atan2(2.0 * (qw * qz + qx * qy), 1.0 - 2.0 * (qy * qy + qz * qz))
+                    cy, sy = math.cos(yaw), math.sin(yaw)
+                    eye = (cy * eye[0] - sy * eye[1], sy * eye[0] + cy * eye[1], eye[2])
+                    look = (cy * look[0] - sy * look[1], sy * look[0] + cy * look[1], look[2])
                 cam = ([root[0] + eye[0], root[1] + eye[1], eye[2]], [root[0] + look[0], root[1] + look[1], look[2]])
                 command_env.sim.set_camera_view(*cam)
                 if olaf:
                     _log_push_frame(command_env, cam)
 
         follow = None
-        if args_cli.video and ("Velocity" in args_cli.task or olaf) and (args_cli.camera_follow or olaf):
+        if args_cli.video and ("Velocity" in args_cli.task or olaf) and (args_cli.camera_follow or olaf) \
+                and not args_cli.camera_fixed:
             follow = (tuple(env_cfg.viewer.eye), tuple(env_cfg.viewer.lookat))
         run_playback(step, dt=dt, args_cli=args_cli, env_cfg=env_cfg)
+        legs = getattr(command_env, "_leg_rows", None)
+        if legs:
+            path = os.path.join(log_dir, "videos", "play", "exterior_frames.npz")
+            np.savez_compressed(path, t=np.array([r[0] for r in legs]), R_rel=np.stack([r[1] for r in legs]),
+                                t_rel=np.stack([r[2] for r in legs]), g=np.stack([r[3] for r in legs]))
+            print(f"[INFO] leg poses: {path} (overlay with scripts/eval/exterior_overlay.py)", flush=True)
         rows = getattr(command_env, "_push_rows", None)
         if rows:
             import csv
