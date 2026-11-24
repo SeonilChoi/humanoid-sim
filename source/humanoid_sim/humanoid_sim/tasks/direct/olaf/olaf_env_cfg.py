@@ -190,6 +190,8 @@ class ArtiH1OlafEnvCfg(ArtiH1VelocityKBEnvCfg):
     ekf_contact_noise = 0.05  # m/s, sole slip
     ekf_fk_noise = 0.004  # m, leg kinematics (std)
     ekf_init_std = {"rot": 0.03, "vel": 0.05, "pos": 0.01, "gyro_bias": 0.03, "accel_bias": 0.2}
+    # hold the gyro z bias at 0: free, it absorbed the yaw rate (in-place yaw drift, real 11-23); controller ekf.freeze_gyro_bias_z
+    ekf_freeze_gyro_bias_z = True
     # accelerometer model (sim), from the real logs (scripts/real2sim/accel_real_logs.py): specific force at the IMU point
     # (mean over the MTi-3 output interval) + white noise + touchdown impact noise + per-episode bias, delayed like the
     # MTi-3 orientation.

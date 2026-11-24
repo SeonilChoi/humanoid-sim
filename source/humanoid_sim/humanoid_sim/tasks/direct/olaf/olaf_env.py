@@ -192,7 +192,8 @@ class ArtiH1OlafEnv(ArtiH1VelocityEnv):
         # the MTi-3 gyro / accelerometer and the leg kinematics, in its own world frame, with its own path frame
         self.ekf = InEKF(n, dev, gyro_noise=cfg.ekf_gyro_noise, accel_noise=cfg.ekf_accel_noise,
                          gyro_bias_noise=cfg.ekf_gyro_bias_noise, accel_bias_noise=cfg.ekf_accel_bias_noise,
-                         contact_noise=cfg.ekf_contact_noise, fk_noise=cfg.ekf_fk_noise, init_std=dict(cfg.ekf_init_std))
+                         contact_noise=cfg.ekf_contact_noise, fk_noise=cfg.ekf_fk_noise, init_std=dict(cfg.ekf_init_std),
+                         freeze_gyro_bias_z=cfg.ekf_freeze_gyro_bias_z)
         self.imu_r = torch.tensor(cfg.imu_translation, device=dev, dtype=torch.float32)  # IMU in the pelvis frame
         # IMU point velocity accel_average_s before the observation (the Xsens acceleration output is dV / dt over its
         # output interval)

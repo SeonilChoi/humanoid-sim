@@ -4,6 +4,10 @@ Batched (one filter per env), right-invariant ("world-centric") form of the open
 
   state X in SE_4(3): R (body -> world), v, p (body origin = IMU), d_L, d_R (sole contact points, world)
   parameters theta: gyro bias b_g, accelerometer bias b_a
+  freeze_gyro_bias_z: b_g,z (body z ~ the yaw axis) is held at 0 (zero initial variance and random walk). Yaw is not
+  observable from contacts + gravity, and a free b_g,z absorbed the true yaw rate: on the real robot (11-23) and in the
+  log replay the estimated heading stood still while the torso turned up to +13 deg/s, and the policy, closing a heading
+  error it never saw shrink, kept turning. With b_g,z frozen the heading integrates the raw gyro z (MTi-3 bias ~0.01 rad/s).
   error order (21): [phi_R, v, p, d_L, d_R, b_g, b_a]
 
   propagate(gyro, accel, dt): strapdown IMU integration, covariance with the log-linear error dynamics
@@ -46,7 +50,8 @@ def so3_exp_jl(phi: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
 
 class InEKF:
     def __init__(self, n: int, device, *, gyro_noise: float, accel_noise: float, gyro_bias_noise: float,
-                 accel_bias_noise: float, contact_noise: float, fk_noise: float, init_std: dict[str, float]):
+                 accel_bias_noise: float, contact_noise: float, fk_noise: float, init_std: dict[str, float],
+                 freeze_gyro_bias_z: bool = False):
         f64 = torch.float64
         self.n, self.dev = n, device
         self.R = torch.eye(3, dtype=f64, device=device).repeat(n, 1, 1)
@@ -65,6 +70,8 @@ class InEKF:
         q[ID:ID + 6] = contact_noise ** 2
         q[IBG:IBG + 3] = gyro_bias_noise ** 2
         q[IBA:IBA + 3] = accel_bias_noise ** 2
+        if freeze_gyro_bias_z:
+            q[IBG + 2] = 0.0
         self.Qc = torch.diag(q)
         self.fk_var = fk_noise ** 2
         s = init_std
@@ -74,6 +81,8 @@ class InEKF:
         p0[IP:IP + 3] = s["pos"] ** 2
         p0[IBG:IBG + 3] = s["gyro_bias"] ** 2
         p0[IBA:IBA + 3] = s["accel_bias"] ** 2
+        if freeze_gyro_bias_z:  # zero row / column in P -> zero Kalman gain on b_g,z, exactly (Phi and Ad keep it zero)
+            p0[IBG + 2] = 0.0
         self.P0 = torch.diag(p0)
         self.eye = torch.eye(DIM, dtype=f64, device=device)
 
