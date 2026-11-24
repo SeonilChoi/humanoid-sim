@@ -1,6 +1,6 @@
 # humanoid_sim: working notes for Claude
 
-The ARTI-H1 KB (knee-bent) robot is trained with the imitation RL of the Olaf paper (arXiv 2512.16705), with **separate
+The ARTI-H1 robot is trained with the imitation RL of the Olaf paper (arXiv 2512.16705), with **separate
 walking and standing policies**. The goal is to deploy them on the real robot (humanoid_controller, branch
 `arti-h1-olaf`) so that it **stands and walks without falling**. This project continues `arti_h1_olaf` (commit 2c756fe,
 2026-11-24) and carries the PlaCo reference generator as `humanoid_sim.utils.motion_generator`. Everything below comes
@@ -159,7 +159,7 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
   → 37.5 Hz low-pass. The controller runs the same chain in a 600 Hz servo thread. On the robot the low-pass is per
   mode: 20 Hz standing, 37.5 Hz walking (`stand_action_lowpass_hz`).
 - **Actuators:** delay 19 ms (±6, step jitter 1), extra delay hip_roll 10 ms / ankle_pitch 8 ms, Coulomb friction,
-  armature, kp DR (0.7, 1.2). Inherited from the KB line's closed-loop replay of the 11-13 logs. The 125 Hz Unitree bus
+  armature, kp DR (0.7, 1.2). Inherited from the earlier arti_h1_local line's closed-loop replay of the 11-13 logs. The 125 Hz Unitree bus
   command update is not modelled (risk of double counting the fitted 4 ms delay).
 - **Thermal model:** fitted on 28 real logs (alpha fixed at 0.001, beta per joint type). T_max 80 °C, observation clip
   [70, 85].

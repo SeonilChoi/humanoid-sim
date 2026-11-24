@@ -1,6 +1,6 @@
 # humanoid_sim
 
-Isaac Lab project for the ARTI-H1 knee-bent (KB) robot, trained with the method of Müller, Knoop et al., *Olaf: Bringing
+Isaac Lab project for the ARTI-H1 robot, trained with the method of Müller, Knoop et al., *Olaf: Bringing
 an Animated Character to Life in the Physical World* (arXiv 2512.16705v2). It starts from `arti_h1_olaf` (commit
 2c756fe, 2026-11-24) and adds the motion generator (formerly the separate `motion_generator` project) as
 `humanoid_sim.utils.motion_generator`, so the references are generated in the Isaac Lab venv. It does not import
@@ -16,7 +16,7 @@ same venv.
 | `motion_engine.py` | `MotionEngine`: PlaCo walk pattern generator (footstep planner, LIPM / ZMP CoM plan, swing trajectories) and whole-body IK, ticked at a fixed dt. Unchanged from `motion_generator` (bddca3f) |
 | `heel_toe.py` | `make_engine(gait)`: `MotionEngine` with the Olaf heel-toe roll (toe-off, heel strike), scaled with the forward stride |
 | `gait_generator.py` | The `motion_generator` episode recorder and Meshcat viewer, run as a module (below) |
-| `config/arti_h1/` | `gait_olaf_kb.json` (the KB gait used for the references), `gait.json`, `motion.json` |
+| `config/arti_h1/` | `gait_olaf_kb.json` (the gait used for the references), `gait.json`, `motion.json` |
 | `robots/arti_h1/` | URDF, `limits.json`, `collisions.json`, meshes |
 
 PlaCo is imported only when an engine is built, so training and the server do not need it. Install it in the Isaac Lab
@@ -35,7 +35,7 @@ python -m humanoid_sim.utils.motion_generator.gait_generator --index 0 --robot a
 |---|---|
 | Separate walking and standing policies | `HumanoidSim-Olaf-Walk-v0`, `HumanoidSim-Olaf-Stand-v0` (`-Play-` variants: 16 envs) |
 | Path frame `p_PF = (x, y, ψ)`: integrates the path velocity when walking, converges to the feet midpoint when standing, stays within a bound of the torso | `olaf_env.py` `_pre_physics_step` (0.10 m / 0.35 rad bound, τ = 0.5 s when standing) |
-| Animation reference from a gait tool with heel-toe motion, `x_t = f(p_PF, g, φ)` | PlaCo walk (KB stance) with an added heel-toe roll (`reference/gen_walk_clips.py`), 250 clips on a step grid, phase-binned relative to the clip's path frame (`reference/build_reference.py`); looked up by path velocity (4-NN blend) and phase |
+| Animation reference from a gait tool with heel-toe motion, `x_t = f(p_PF, g, φ)` | PlaCo walk with an added heel-toe roll (`reference/gen_walk_clips.py`), 250 clips on a step grid, phase-binned relative to the clip's path frame (`reference/build_reference.py`); looked up by path velocity (4-NN blend) and phase |
 | Standing input `g = (neck, torso orientation, height)` | `g = (dz, roll, pitch, yaw)` of the trunk. PlaCo IK grid 4×5×5×5 (`reference/gen_stand_grid.py`), multilinear lookup. No neck |
 | `g` randomised over its full range | Walk: uniform box, projected onto the reference coverage (vx −0.12..0.15, vy ±0.068 m/s, wz ±0.4 rad/s). Stand: uniform with a rate-limited follow |
 | Policy state (eq. 3) | Root pose relative to the path frame, root-frame velocities, q, q̇, a(t−1), a(t−2), actuator temperatures, φ (walk), then g |
@@ -57,8 +57,8 @@ show functions) and the Animation Engine.
   identified from these logs. α is therefore fixed at 0.001 s⁻¹ (time constant about 17 min), T_amb is drawn from 20–31 °C
   (the observed session starts), and β is fitted per joint type.
 * Actuator delay, jitter and extra lag, Coulomb friction, armature, PD-gain DR, MTi-3 gyro noise, bias and delay, joint
-  zero errors, yaw torque bias, pushes and the 5.24 rad/s target rate limit are the KB line's real2sim recipe
-  (arti_h1_local `logs/rsi_kb`, kb05–kb13, from the 11-13..11-16 real logs). The KB line's per-step target low-pass
+  zero errors, yaw torque bias, pushes and the 5.24 rad/s target rate limit are the real2sim recipe of the earlier
+  arti_h1_local line (`logs/rsi_kb`, kb05–kb13, from the 11-13..11-16 real logs). That line's per-step target low-pass
   (0.6 at 60 Hz) is replaced by the paper's runtime chain above. The IMU delay stays one control step (now 20 ms).
 
 ## Commands
