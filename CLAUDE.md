@@ -15,6 +15,12 @@ from the work of 2026-11-17 to 11-24.
   |lean| and yaw rate. Straight but slow beats fast but crabbing.
 - **Reproduce a real problem before fixing it.** Replay the real log's g sequence in sim (`walk_replay`) or start the sim
   from real states (`state_start`) and check that the same failure appears. If it does not, keep looking for the cause.
+- **Series-compliance DR made the policies worse on the robot (11-24).** Every policy trained with it (walk_12, walk_13,
+  stand stage 4 / 5) misbehaved on the robot (7-9 Hz standing limit cycle at the ankle, spinning / falling at walk
+  start or after turns); every policy trained without it (walk_10, stand_07, stage 3) did not, even though the sim
+  ranked the compliance ones far better. Working hypothesis: the compliance values (fitted on walking single support)
+  overstate the standing ankle compliance, so the policies learned too much feedback gain. Train new rounds without it
+  (`joint_series_compliance_scale_range=[0.0,0.0]`) until a robot test says otherwise.
 - **Do not look for the cause only in training.** The 11-23 in-place yaw drift was not fixed by a reward (walk_13
   yaw_drift); the cause was the estimator's b_g,z. Suspect the observation path too (estimator, controller resets, filters).
 
@@ -76,15 +82,15 @@ All checkpoints listed here except walk_14 were trained with a **free** b_g,z (t
 | Name | Path (under logs/skrl/) |
 |---|---|
 | walk_09 | `olaf_walk/2026-11-18_09-03-50_ppo_torch/checkpoints/agent_1944000.pt` |
-| walk_10 | `olaf_walk/2026-11-20_15-40-44_ppo_torch/checkpoints/agent_480000.pt` |
+| **walk_10 (deployed since 11-24)** | `olaf_walk/2026-11-20_15-40-44_ppo_torch/checkpoints/agent_480000.pt` |
 | walk_11 | `olaf_walk/2026-11-21_12-07-56_ppo_torch/checkpoints/agent_480000.pt` |
 | walk_12 | `olaf_walk/2026-11-22_17-06-20_ppo_torch/checkpoints/agent_480000.pt` |
-| **walk_13 (deployed)** | `olaf_walk/2026-11-23_14-51-56_ppo_torch/checkpoints/agent_480000.pt` |
+| walk_13 | `olaf_walk/2026-11-23_14-51-56_ppo_torch/checkpoints/agent_480000.pt` (robot 11-24: spun and fell in 3.5 s) |
 | walk_14 (training, 11-24 13:06, ETA about 23:00-01:00) | `olaf_walk/2026-11-24_13-06-19_ppo_torch/` (local only until it is committed; launcher `logs/train/walk_14.sh`) |
-| stand_07 (smooth) | `olaf_stand/2026-11-20_13-25-38_ppo_torch/checkpoints/agent_{72000,96000}.pt` (72000 ran on the robot as `agent_olaf_stand_smooth_72000.onnx`) |
+| **stand_07 (smooth, deployed since 11-24)** | `olaf_stand/2026-11-20_13-25-38_ppo_torch/checkpoints/agent_{72000,96000}.pt` (72000 = `agent_olaf_stand_smooth_72000.onnx`) |
 | stand stage 3 | `olaf_stand/server_stage3/checkpoints/agent_480000.pt` (no tremor on the robot) |
 | stand stage 4 | `olaf_stand/server_stage4/checkpoints/agent_264000.pt` (8.8 Hz tremor on the robot) |
-| **stand stage 5 (deployed)** | `olaf_stand/server_stage5/checkpoints/agent_{240000,480000}.pt`. Its `params/` is a copy of stage 4's, for export only (NOTE.txt). Server stages have no TensorBoard files here |
+| stand stage 5 | `olaf_stand/server_stage5/checkpoints/agent_{240000,480000}.pt` (robot 11-24: worst tremor so far). Its `params/` is a copy of stage 4's, for export only (NOTE.txt). Server stages have no TensorBoard files here |
 
 ## 4. Evaluation metrics and acceptance criteria
 
@@ -110,7 +116,7 @@ conclusions from small differences.
 
 | Metric | Tool / command | Criterion | Reference values |
 |---|---|---|---|
-| **Tremor proxy**: share of action power above 5 Hz | `NO_PUSH=1 LPF_HZ=20 python scripts/real2sim/stand_tremor.py --checkpoint <pt> --num_envs 64 --steps 1000 --headless` | **≤ 0.1** | stage 3 0.05-0.09 (fine on the robot), stage 4 0.35 (shook on the robot), stage 5 0.21 (not yet tested) |
+| Sim tremor proxy: share of action power above 5 Hz | `NO_PUSH=1 LPF_HZ=20 python scripts/real2sim/stand_tremor.py --checkpoint <pt> --num_envs 64 --steps 1000 --headless` | **not a gate any more** (report only) | stage 3 0.05-0.09 (fine), stage 4 0.35 (shook), stage 5 0.21 (shook **worse** than stage 4 on 11-24): it does not rank policies. The sim does not reproduce the tremor at all, so a stand policy is accepted only after a robot test |
 | Tremor-band amplitude | same output: gyro 7.5-11 Hz rms, q_des 7.5-11 Hz rms | for reference | stage 5 0.027/0.029, stage 4 0.036/0.035 |
 | Standing stability | `python scripts/eval/stand_check.py --checkpoint <pt> --steps 750 --num_envs 256 --headless` (and `NO_PUSH=1`) | ≤ the deployed policy | stage 5 34/3, stage 4 82/13, stage 3 306/161 |
 | Walk → stand switch | `python scripts/eval_switch.py --walk_ckpt <deployed walk> --stand_ckpt <pt> --out logs/eval_switch/<tag> --headless` | ≤ 10 % | with walk_12: stage 5 5.5 %, stage 4 9.0 %, stage 3 35 % |
@@ -120,8 +126,9 @@ conclusions from small differences.
 
 ### Metrics on real logs (after a robot test)
 
-- Standing: |da|/step (good: 0.0013-0.0027), gyro_y std (good: about 0.09), share of gyro power above 5 Hz (stage 3
-  22 %, shaking stage 4 79 %), tilt ≤ 4 deg.
+- Standing tremor (longest standing stretch, skip the first 3 s): gyro_y rms in 6-10 Hz, ankle_pitch q_des rms in
+  6-10 Hz, and the coherence between them. stand_07: 0.07 rad/s / 0.26 deg (11-24), stage 4: 0.13 / 0.62 deg
+  (coherence 0.97), stage 5: 0.39 / 1.17 deg (coherence 0.99 = policy-loop limit cycle). Also |da|/step, tilt ≤ 4 deg.
 - Walking: IMU yaw rate at g = 0 (from `imu_q*`); whether the heading relative to the path (obs_3, obs_5) runs out to
   the leash (20 deg); knee saturation (about 0.55 on the robot and in sim); stride pitch range right after a turn
   (7 deg growing to 15-20 deg precedes a fall).
@@ -130,6 +137,10 @@ conclusions from small differences.
 ## 5. Current training recipe
 
 The cfg defaults (walk rate 5 / acc 1, stand rate 2 / acc 0.5) are **not the deployed recipe**. Pass these CLI overrides.
+Since 11-24 add `env.ekf_freeze_gyro_bias_z=True "env.joint_series_compliance_scale_range=[0.0,0.0]"` (section 1), and
+for standing `env.action_lowpass_hz=20.0` (the robot's stand low-pass). Current launchers: `logs/train/walk_15.sh`
+(local, from walk_10) and `scripts/server_stand_stage6.sh` (server, from stage 3, switch bank
+`olaf_switch_bank_walk10_480000.npz` = walk_10 without compliance).
 
 Walking (as walk_13, fine-tuned from the previous checkpoint):
 ```bash
@@ -150,7 +161,8 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 - `curriculum_step_offset`: for fine-tuning, set it at or above the end of `dr_widen_steps` (24k, 1.2M) so the DR is at
   its final range from the start.
 - A switch bank (`switch_bank`) belongs to the walk policy that produced it. The current file comes from walk_10.
-  Before the next stand run, rebuild it with the deployed walk policy (walk_13, or walk_14 if adopted):
+  The deployed walk is walk_10 again, whose non-compliance bank is `olaf_switch_bank_walk10_480000.npz`. When the
+  deployed walk policy changes, rebuild it:
   `python scripts/eval_switch.py --walk_ckpt <walk> --stand_ckpt - --num_envs 4096 --bank <name>.npz --headless`.
 - `scripts/server_stand_stage5.sh` starts from `agent_stand_stage3_480000.pt` at the repo root, which was removed on
   11-24. Fix that path before reusing the script.
@@ -166,13 +178,16 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 | walk_11 | real2sim DR v1 (delay +15 ms, kp, torso torque noise), zero command 0.3 | marginal gain, not adopted |
 | walk_12 | real2sim v2 (series joint compliance, est_z DR) | replay falls 86 → 2/128. Robot (11-23): in-place yaw drift |
 | walk_13 | yaw_drift reward (w 50, tau 1 s), 40 s episodes; trained with b_g,z **free** | the reward alone did not fix the yaw. Deployed on 11-24 with the controller's b_g,z **frozen** (sim replay: yaw fixed, 0/32 falls) |
-| walk_14 | walk_13 + the same recipe, trained with b_g,z **frozen** (training = deployment observation path) | running (11-24) |
+| walk_14 | walk_13 + the same recipe, trained with b_g,z **frozen** (training = deployment observation path) | running (11-24); still has compliance DR, so low priority after the 11-24 robot test |
+| walk_10 on the robot with b_g,z frozen (11-24) | — | 130 s walking without a fall, in-place yaw +0.4 deg/s (free bias 11-21: −1.5), right turns only; **deployed** with stand_07 |
+| walk_15 | from walk_10, walk_13 recipe, b_g,z frozen, **no compliance DR** | planned (`logs/train/walk_15.sh`) |
 | stand_01-06 | base standing | robot (11-20): 9.6 Hz shaking |
 | stand_07 | smoothness (rate 10, acc 3) | robot standing fine (\|da\| 0.0013-0.0027) |
 | stage 2 | starts from the walk_09 switch bank | better switches but more jitter, not adopted |
 | stage 3 | walk_10 compliance switch bank | adopted; no tremor on the robot |
 | stage 4 | compliance DR | much more stable in sim, but an 8.8 Hz tremor on the robot |
-| stage 5 | restarted from stage 3, acc 3 → 10 | most stable so far, tremor proxy 0.21. **Deployed, awaiting the robot test** (11-24) |
+| stage 5 | restarted from stage 3, acc 3 → 10 | most stable in sim, but on the robot (11-24) the worst tremor so far (7.4 Hz, gyro 0.39 rad/s) |
+| stage 6 | from stage 3, **no compliance DR**, b_g,z frozen, 20 Hz low-pass, walk_10 bank | planned (server, `scripts/server_stand_stage6.sh`) |
 
 ## 7. real2sim (all in the env cfg)
 
@@ -202,6 +217,9 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 
 - `robot_olaf.yaml` (`policy.observation: olaf`) runs both policies. Pad: cross = walk, circle = stand (switches at the
   next touchdown, g = 0 meanwhile, 1 s timeout).
+- **STAND stick shaping (controller, 11-24):** continuous deadzone, expo 0.6, a 0.4 s low-pass on the stick target, and
+  half the training follow rate (`olaf.stand_stick_expo`, `stand_target_tau`, `stand_command_rate`). Slower than
+  training, so it adds nothing out of distribution; the operator found the old direct mapping too abrupt.
 - **Mode-switch reset:** on a policy switch, a(t) and a(t−1) are reset to clamp((q − default) / scale)
   (`olaf_switch_reset`, `olaf.action_scale`). This must mirror the env's `_reset_idx`. On 11-20 the robot fell because
   the walk policy's ±1 actions were fed to the stand policy.
@@ -231,17 +249,20 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 - 11-23: the in-place yaw drift came from the InEKF's b_g,z (frozen on 11-24). A short spike in the estimated yaw over
   the first ~4 s of walking is still open.
 - 11-20: at 71 s all 8 Unitree motors went stale at once. Check the bus / power. The hold worked.
+- 11-24: freezing b_g,z worked on the robot (walk_10: in-place yaw −1.5 → +0.4 deg/s). walk_13 turned −18 deg in the
+  first 2 s of walking and fell after 3.5 s; stand stage 5 shook at 7.4 Hz, worse than stage 4. walk_10 + stand_07
+  (no compliance DR) walked 130 s; it fell once in STAND at the end, during quick roll / pitch stick changes.
 
 ## 10. Open issues and next steps (in priority order)
 
-1. **Evaluate walk_14** when it finishes, against walk_13 rerun with the current (frozen-b_g,z) code, with every
-   walking criterion in section 4. This also covers "walk_13 not re-evaluated with the frozen b_g,z". If walk_14 passes,
-   export it and propose it for deployment; do not deploy without the user.
-2. **Robot test** of the deployed pair (walk_13 or walk_14, stand stage 5). The user runs it; analyse the log with the
-   real-log metrics in section 4.
-3. **Stand stage 6, only if stage 5 shakes on the robot:** first switch the controller back to
-   `agent_olaf_stand_stage3_480000.onnx`, rebuild the switch bank with the deployed walk policy, then train a smoother
-   stage 6 (for example acc 30, b_g,z frozen) on the server (section 5 standing recipe).
-4. The estimated-yaw transient over the first ~4 s of walking.
-5. Not modelled (no action planned): encoder zero errors (sim FK uses the true joint angles), the 125 Hz bus, the mass
-   properties of the new pelvis (`arti-h1-new-pelvis`).
+1. **Compliance-off comparison:** walk_15 (local, `logs/train/walk_15.sh`; the GPU runs one training at a time, so
+   walk_14 has to stop first, ask the user) and stand stage 6 (server, `scripts/server_stand_stage6.sh`). Evaluate with
+   section 4 against walk_10 / stand_07 rerun with the same code; the deciding test is the robot (stand tremor metrics,
+   in-place yaw, left and right turns).
+2. **Robot test of the deployed pair** (walk_10 + stand_07, b_g,z frozen): **left turns** (only right turns were
+   tested on 11-24; the 11-21 falls came after left turns) and STAND stick changes with the new stick shaping.
+3. Re-fit or drop the series compliance: check it on standing data before using it again.
+4. The yaw transient over the first ~2 s of walking (walk_13 −18 deg, walk_10 −5 to −7 deg; always negative).
+5. walk_14 (compliance DR, b_g,z frozen): finish only if the GPU is free; lower priority than walk_15.
+6. Not modelled (no action planned): encoder zero errors (sim FK uses the true joint angles), the 125 Hz bus, the mass
+   properties of the new pelvis (`arti-h1-new-pelvis`), the Togepi exterior's mass.
