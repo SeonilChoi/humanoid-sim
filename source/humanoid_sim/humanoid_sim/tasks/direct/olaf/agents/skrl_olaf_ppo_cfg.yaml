@@ -1,0 +1,71 @@
+seed: 42
+
+# Olaf (arXiv 2512.16705, Sec. VII-B): PPO, actor and critic three-layer MLPs with 512 units, critic on privileged
+# noiseless state. The paper gives no other PPO hyperparameters: these are the ARTI-H1 velocity line's (24 rollouts,
+# 5 epochs x 4 mini-batches, KL-adaptive lr 1e-3, observation normalisation). Paper: 100k iterations (~2 d on an
+# RTX 4090 with 8192 envs); here 4096 envs, timesteps = 24 * iterations.
+
+models:
+  separate: True
+  policy:
+    class: GaussianMixin
+    clip_actions: False
+    clip_log_std: True
+    min_log_std: -3.0
+    max_log_std: 1.0
+    initial_log_std: -0.7
+    fixed_log_std: False
+    network:
+      - name: net
+        input: OBSERVATIONS
+        layers: [512, 512, 512]
+        activations: elu
+    output: ACTIONS
+  value:
+    class: DeterministicMixin
+    clip_actions: False
+    network:
+      - name: net
+        input: STATES
+        layers: [512, 512, 512]
+        activations: elu
+    output: ONE
+
+memory:
+  class: RandomMemory
+  memory_size: -1
+
+agent:
+  class: PPO
+  rollouts: 24
+  learning_epochs: 5
+  mini_batches: 4
+  discount_factor: 0.99
+  gae_lambda: 0.95
+  learning_rate: 1.0e-03
+  learning_rate_scheduler: KLAdaptiveLR
+  learning_rate_scheduler_kwargs:
+    kl_threshold: 0.01
+  observation_preprocessor: RunningStandardScaler
+  observation_preprocessor_kwargs: null
+  state_preprocessor: RunningStandardScaler
+  state_preprocessor_kwargs: null
+  value_preprocessor: RunningStandardScaler
+  value_preprocessor_kwargs: null
+  grad_norm_clip: 1.0
+  ratio_clip: 0.2
+  value_clip: 0.2
+  entropy_loss_scale: 0.005
+  value_loss_scale: 1.0
+  kl_threshold: 0.0
+  time_limit_bootstrap: True
+  experiment:
+    directory: "humanoid_sim"
+    experiment_name: ""
+    write_interval: 240
+    checkpoint_interval: 24000  # every 1000 iterations
+
+trainer:
+  class: SequentialTrainer
+  timesteps: 2400000  # 100k iterations (paper)
+  environment_info: log

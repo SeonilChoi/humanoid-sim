@@ -1,0 +1,41 @@
+{
+ "model": "dT/dt = -alpha (T - T_ambient) + beta tau^2 (arXiv 2512.16705 eq. 6), per joint type",
+ "source": "28 real ARTI-H1 logs (humanoid_controller git history + working tree, 2026-10-24..11-16, ~50 min at 60 Hz), scripts/thermal/fit_thermal.py",
+ "note": "leg motors heat only 0-6 C per session, so alpha / T_ambient are not identifiable (free fit gave negative alpha / 200 C ambient); alpha fixed at 0.001 1/s (~17 min time constant), T_ambient = session start temperature, beta least squares >= 0. Real session start temps 20-31 C.",
+ "alpha": {
+  "hip_yaw": 0.001,
+  "hip_roll": 0.001,
+  "hip_pitch": 0.001,
+  "knee": 0.001,
+  "ankle_pitch": 0.001,
+  "ankle_roll": 0.001
+ },
+ "beta": {
+  "hip_yaw": 0.002463,
+  "hip_roll": 0.000879,
+  "hip_pitch": 0.000156,
+  "knee": 0.001166,
+  "ankle_pitch": 0.00369,
+  "ankle_roll": 0.003872
+ },
+ "rollout_mae_C": {
+  "hip_yaw": 0.173,
+  "hip_roll": 0.229,
+  "hip_pitch": 0.054,
+  "knee": 0.264,
+  "ankle_pitch": 0.294,
+  "ankle_roll": 0.271
+ },
+ "constant_T_mae_C": {
+  "hip_yaw": 0.162,
+  "hip_roll": 0.347,
+  "hip_pitch": 0.047,
+  "knee": 0.355,
+  "ankle_pitch": 0.334,
+  "ankle_roll": 0.259
+ },
+ "T_ambient_range": [
+  20.0,
+  31.0
+ ]
+}

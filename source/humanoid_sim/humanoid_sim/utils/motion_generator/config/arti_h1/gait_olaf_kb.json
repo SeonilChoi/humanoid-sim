@@ -1,0 +1,70 @@
+{
+ "robot": "arti_h1",
+ "dx": 0.0,
+ "dy": 0.0,
+ "dtheta": 0.0,
+ "duration": 8.0,
+ "hardware": true,
+ "joint_velocity_limit": 30.0,
+ "ankle_velocity_limit": 5.0,
+ "trunk_mode": true,
+ "ik_mode": "generic_frame",
+ "right_foot_ik_yaw_offset": 3.14159265359,
+ "ik_trunk_task_weight": 50.0,
+ "double_support_ratio": 0.25,
+ "startend_double_support_ratio": 2.0,
+ "planned_timesteps": 64,
+ "replan_timesteps": 10,
+ "walk_com_height": 0.29725,
+ "walk_foot_height": 0.03,
+ "walk_trunk_pitch": 0.0,
+ "walk_foot_rise_ratio": 0.2,
+ "single_support_duration": 0.32,
+ "single_support_timesteps": 16,
+ "foot_length": 0.122,
+ "feet_spacing": 0.127,
+ "zmp_margin": 0.01,
+ "foot_zmp_target_x": 0.0,
+ "foot_zmp_target_y": -0.03,
+ "walk_max_dtheta": 0.25,
+ "walk_max_dy": 0.06,
+ "walk_max_dx_forward": 0.07,
+ "walk_max_dx_backward": 0.06,
+ "joints": [
+  "left_hip_yaw",
+  "left_hip_roll",
+  "left_hip_pitch",
+  "left_knee",
+  "left_ankle_pitch",
+  "left_ankle_roll",
+  "right_hip_yaw",
+  "right_hip_roll",
+  "right_hip_pitch",
+  "right_knee",
+  "right_ankle_pitch",
+  "right_ankle_roll"
+ ],
+ "joint_angles": {},
+ "heel_strike_deg": 5.0,
+ "toe_off_deg": 6.0,
+ "heel_toe_half_length": 0.057,
+ "enable_joint_limits": true,
+ "grid": {
+  "dx": [
+   -0.048,
+   0.06,
+   0.012
+  ],
+  "dy": [
+   -0.048,
+   0.048,
+   0.024
+  ],
+  "dth": [
+   -0.16,
+   0.16,
+   0.08
+  ]
+ },
+ "heel_toe_window_s": 0.2
+}
