@@ -28,9 +28,24 @@ from the work of 2026-11-17 to 11-24.
   the final DR.
 - **PlaCo** (only needed to regenerate references): placo 0.12.0 is installed in the Isaac venv (pin 4.1.0 unchanged).
   It reproduces the old PlaCo 0.10.2 clips and stand grid to 1e-15.
-- **Where training runs:** walking locally (RTX 5070 Ti, 4096 envs, about 14 it/s, about 10.5 h per 480k steps),
+- **Where training runs:** walking locally (RTX 5070 Ti, 4096 envs, about 11-14 it/s, about 10-12 h per 480k steps),
   standing on the server (8192 envs). The user runs the server and sends checkpoints through git (`agent_*.pt` at the
-  repo root).
+  repo root, see section 3). Run standing locally only if the user asks (then 4096 envs, as stand_07 did); one training
+  run at a time on the local GPU.
+- **Launching a training run:**
+  - Name rounds `walk_NN` / stand `stage N` (next: walk_15, stage 6). The run directory name is the skrl timestamp; record
+    the name ↔ directory mapping in the section 3 checkpoint table and the section 6 history.
+  - Write a launcher `logs/train/<name>.sh` (venv, EULA, `cd` to the repo, the full train command with every override,
+    a comment saying why) and start it detached from the repo root:
+    `nohup bash logs/train/<name>.sh > logs/train/<name>.log 2>&1 &` (or a tmux session).
+  - `train.py` creates the run directory at once but prints no progress for about 2-3 minutes while Isaac Sim starts.
+    Confirm the start: the skrl progress bar in the log, the new `logs/skrl/<dir>/<timestamp>_ppo_torch/`, and the
+    overrides (for example `ekf_freeze_gyro_bias_z`) in its `params/env.yaml`. Report the measured it/s and the ETA.
+  - Pass every recipe override explicitly, including ones equal to the current cfg default (for example
+    `env.ekf_freeze_gyro_bias_z=True`), so the launcher states the intent even if the default changes later.
+- **Evaluation outputs:** write logs to `logs/eval/<MMDD>/<metric>_<name>.log` (for example `logs/eval/1125/gait_walk14.log`);
+  `eval_switch.py` writes to `logs/eval_switch/<tag>`, `walk_replay.py` to `scripts/real2sim/walk_replay/res_<tag>*`.
+  These are not committed. Summarise the numbers in the section 6 history and in commit messages.
 - **git:** the shell has no credentials. The user pushes, or gives a token in a message. Use the token only in that push
   command and never store it (no remote URL, no credential helper). Commit and push only when asked.
 - **Running things:**
@@ -46,13 +61,17 @@ from the work of 2026-11-17 to 11-24.
 | What | Where |
 |---|---|
 | Past runs (selected checkpoints, params, TensorBoard) | `logs/skrl/olaf_{walk,stand}/` in this repo (force-added: `logs/` is in .gitignore, so `git add -f`). All checkpoints of these runs are still in `/opt/isaac/projects/arti_h1_olaf/logs/skrl/` on the dev PC |
-| Controller worktree | `/opt/isaac/projects/humanoid_controller_olaf` (branch `arti-h1-olaf`, remote SeonilChoi/humanoid_controller) |
+| Repo-root `agent_*.pt` | the server's hand-off spot. Now `agent_240000.pt` / `agent_480000.pt` = **stand stage 5** (not walk). Copy each new one to `logs/skrl/olaf_stand/server_stageN/checkpoints/` and identify it by the observation preprocessor count (stage start count + N × 8192) |
+| Controller checkout | `/opt/isaac/projects/humanoid_controller_olaf` (branch `arti-h1-olaf`, remote SeonilChoi/humanoid_controller) |
 | Controller config / ONNX | `config/robot/ARTI-H1/robot_olaf.yaml`, `agent_olaf_*.onnx`, `olaf_walk_keys.yaml` |
 | Robot PC | Jetson Orin `~/humanoid_controller_olaf`. The C++ build works only there; the dev PC lacks yaml-cpp and onnxruntime |
 | Real logs | `data/real_logs/arti_h1_olaf_run_<YYYYMMDD_HHMMSS>.csv`: all 12 Olaf robot runs (11-20 x7, 11-21 x4, 11-23 x1), taken from the controller history (removed there by commit 6af2da5). Hard floor: 11-21 095329 / 095641 / 100031, 11-23 132540; 11-21 095050 is carpet. Run the replay scripts from the repo root (their defaults are `data/real_logs/...`) |
 | Log columns | `t, phase, obs_0..79, q_des_*, action_*, pos_/vel_/tau_/temp_<joint>, imu_q*, imu_g*, imu_a*, olaf_walk, est_x..est_vz, g0..g2`. g0, g1, g2 = path vx, vy, yaw rate. obs_3..8 = rot6 of the estimated attitude relative to the path frame; heading relative to the path = atan2(obs_5, obs_3) |
 
 Checkpoints:
+
+All checkpoints listed here except walk_14 were trained with a **free** b_g,z (their `params/env.yaml` has no
+`ekf_freeze_gyro_bias_z` key); the controller runs them with b_g,z frozen since 11-24.
 
 | Name | Path (under logs/skrl/) |
 |---|---|
@@ -61,6 +80,7 @@ Checkpoints:
 | walk_11 | `olaf_walk/2026-11-21_12-07-56_ppo_torch/checkpoints/agent_480000.pt` |
 | walk_12 | `olaf_walk/2026-11-22_17-06-20_ppo_torch/checkpoints/agent_480000.pt` |
 | **walk_13 (deployed)** | `olaf_walk/2026-11-23_14-51-56_ppo_torch/checkpoints/agent_480000.pt` |
+| walk_14 (training, 11-24 13:06, ETA about 23:00-01:00) | `olaf_walk/2026-11-24_13-06-19_ppo_torch/` (local only until it is committed; launcher `logs/train/walk_14.sh`) |
 | stand_07 (smooth) | `olaf_stand/2026-11-20_13-25-38_ppo_torch/checkpoints/agent_{72000,96000}.pt` (72000 ran on the robot as `agent_olaf_stand_smooth_72000.onnx`) |
 | stand stage 3 | `olaf_stand/server_stage3/checkpoints/agent_480000.pt` (no tremor on the robot) |
 | stand stage 4 | `olaf_stand/server_stage4/checkpoints/agent_264000.pt` (8.8 Hz tremor on the robot) |
@@ -130,7 +150,7 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 - `curriculum_step_offset`: for fine-tuning, set it at or above the end of `dr_widen_steps` (24k, 1.2M) so the DR is at
   its final range from the start.
 - A switch bank (`switch_bank`) belongs to the walk policy that produced it. The current file comes from walk_10.
-  Before the next stand run, rebuild it with the deployed walk policy (walk_13):
+  Before the next stand run, rebuild it with the deployed walk policy (walk_13, or walk_14 if adopted):
   `python scripts/eval_switch.py --walk_ckpt <walk> --stand_ckpt - --num_envs 4096 --bank <name>.npz --headless`.
 - `scripts/server_stand_stage5.sh` starts from `agent_stand_stage3_480000.pt` at the repo root, which was removed on
   11-24. Fix that path before reusing the script.
@@ -145,7 +165,8 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 | walk_10 | smoothness fine-tune (rate 15, acc 3) | knee saturation 0.81 → 0.55. Robot: 53 s on a hard floor, fell right after a turn |
 | walk_11 | real2sim DR v1 (delay +15 ms, kp, torso torque noise), zero command 0.3 | marginal gain, not adopted |
 | walk_12 | real2sim v2 (series joint compliance, est_z DR) | replay falls 86 → 2/128. Robot (11-23): in-place yaw drift |
-| walk_13 | yaw_drift reward (w 50, tau 1 s), 40 s episodes | the reward alone did not fix the yaw. **Deployed with b_g,z frozen** (11-24) |
+| walk_13 | yaw_drift reward (w 50, tau 1 s), 40 s episodes; trained with b_g,z **free** | the reward alone did not fix the yaw. Deployed on 11-24 with the controller's b_g,z **frozen** (sim replay: yaw fixed, 0/32 falls) |
+| walk_14 | walk_13 + the same recipe, trained with b_g,z **frozen** (training = deployment observation path) | running (11-24) |
 | stand_01-06 | base standing | robot (11-20): 9.6 Hz shaking |
 | stand_07 | smoothness (rate 10, acc 3) | robot standing fine (\|da\| 0.0013-0.0027) |
 | stage 2 | starts from the walk_09 switch bank | better switches but more jitter, not adopted |
@@ -211,12 +232,16 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
   the first ~4 s of walking is still open.
 - 11-20: at 71 s all 8 Unitree motors went stale at once. Check the bus / power. The hold worked.
 
-## 10. Open issues and next steps
+## 10. Open issues and next steps (in priority order)
 
-- Whether stand stage 5 shakes on the robot. If it does, go back to `agent_olaf_stand_stage3_480000.onnx` and train a
-  smoother stage 6 (e.g. acc 30, b_g,z frozen).
-- walk_13's gait_check and eval_switch have not been rerun with the frozen b_g,z.
-- Rebuild the switch bank with walk_13.
-- The estimated-yaw transient right after the walk starts.
-- Not modelled: encoder zero errors (sim FK uses the true joint angles), the 125 Hz bus, the mass properties of the new
-  pelvis (`arti-h1-new-pelvis`).
+1. **Evaluate walk_14** when it finishes, against walk_13 rerun with the current (frozen-b_g,z) code, with every
+   walking criterion in section 4. This also covers "walk_13 not re-evaluated with the frozen b_g,z". If walk_14 passes,
+   export it and propose it for deployment; do not deploy without the user.
+2. **Robot test** of the deployed pair (walk_13 or walk_14, stand stage 5). The user runs it; analyse the log with the
+   real-log metrics in section 4.
+3. **Stand stage 6, only if stage 5 shakes on the robot:** first switch the controller back to
+   `agent_olaf_stand_stage3_480000.onnx`, rebuild the switch bank with the deployed walk policy, then train a smoother
+   stage 6 (for example acc 30, b_g,z frozen) on the server (section 5 standing recipe).
+4. The estimated-yaw transient over the first ~4 s of walking.
+5. Not modelled (no action planned): encoder zero errors (sim FK uses the true joint angles), the 125 Hz bus, the mass
+   properties of the new pelvis (`arti-h1-new-pelvis`).
