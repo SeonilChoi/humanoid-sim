@@ -90,7 +90,7 @@ All checkpoints listed here except walk_14 were trained with a **free** b_g,z (t
 | walk_12 | `olaf_walk/2026-11-22_17-06-20_ppo_torch/checkpoints/agent_480000.pt` |
 | walk_13 | `olaf_walk/2026-11-23_14-51-56_ppo_torch/checkpoints/agent_480000.pt` (robot 11-24: spun and fell in 3.5 s) |
 | walk_14 (stopped at 96k on 11-24 for walk_15) | `olaf_walk/2026-11-24_13-06-19_ppo_torch/checkpoints/agent_96000.pt` (local only; launcher `logs/train/walk_14.sh`) |
-| walk_15 (training, 11-24 19:51, about 12.5 it/s, ETA about 06:30 11-25) | `olaf_walk/2026-11-24_19-51-43_ppo_torch/` (local only until it is committed; launcher `logs/train/walk_15.sh`) |
+| **walk_15 (walk candidate since 11-25, not yet on the robot)** | `olaf_walk/2026-11-24_19-51-43_ppo_torch/checkpoints/agent_480000.pt` (= `agent_olaf_walk15_480000.onnx`; launcher `logs/train/walk_15.sh`) |
 | **stand_07 (smooth, deployed since 11-24)** | `olaf_stand/2026-11-20_13-25-38_ppo_torch/checkpoints/agent_{72000,96000}.pt` (72000 = `agent_olaf_stand_smooth_72000.onnx`) |
 | stand stage 3 | `olaf_stand/server_stage3/checkpoints/agent_480000.pt` (no tremor on the robot) |
 | stand stage 4 | `olaf_stand/server_stage4/checkpoints/agent_264000.pt` (8.8 Hz tremor on the robot) |
@@ -184,7 +184,7 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 | walk_13 | yaw_drift reward (w 50, tau 1 s), 40 s episodes; trained with b_g,z **free** | the reward alone did not fix the yaw. Deployed on 11-24 with the controller's b_g,z **frozen** (sim replay: yaw fixed, 0/32 falls) |
 | walk_14 | walk_13 + the same recipe, trained with b_g,z **frozen** (training = deployment observation path) | stopped at 96k (11-24) to free the GPU for walk_15; still has compliance DR, so low priority |
 | walk_10 on the robot with b_g,z frozen (11-24) | — | 130 s walking without a fall, in-place yaw +0.4 deg/s (free bias 11-21: −1.5), right turns only; **deployed** with stand_07 |
-| walk_15 | from walk_10, walk_13 recipe, b_g,z frozen, **no compliance DR** | running (11-24 19:51, `2026-11-24_19-51-43_ppo_torch`) |
+| walk_15 | from walk_10, walk_13 recipe, b_g,z frozen, **no compliance DR** | done 11-25. Same-code sim vs walk_10: 11-23 replay falls 10/32 vs 21/32, hard floor s=1.0 46 vs 83 /128, pre-fall starts 12.5 vs 28.4 %, gait_check (compliance DR + push) 264 vs 397 falls; knee sat 0.61 vs 0.58; shell contact 2.1 % both (`logs/eval/1125/`). Set as `model_file` (walk_10 is the fallback) |
 | stand_01-06 | base standing | robot (11-20): 9.6 Hz shaking |
 | stand_07 | smoothness (rate 10, acc 3) | robot standing fine (\|da\| 0.0013-0.0027) |
 | stage 2 | starts from the walk_09 switch bank | better switches but more jitter, not adopted |
@@ -259,7 +259,7 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 
 ## 10. Open issues and next steps (in priority order)
 
-1. **Compliance-off comparison:** walk_15 (local, running since 11-24 19:51, `2026-11-24_19-51-43_ppo_torch`) and stand stage 6 (server, `scripts/server_stand_stage6.sh`). Evaluate with
+1. **Compliance-off comparison:** walk_15 (done; beats walk_10 in every sim check, now `model_file`, robot test pending) and stand stage 6 (server, `scripts/server_stand_stage6.sh`). Evaluate with
    section 4 against walk_10 / stand_07 rerun with the same code; the deciding test is the robot (stand tremor metrics,
    in-place yaw, left and right turns).
 2. **Robot test of the deployed pair** (walk_10 + stand_07, b_g,z frozen): **left turns** (only right turns were
