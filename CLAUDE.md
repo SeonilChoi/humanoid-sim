@@ -29,6 +29,9 @@ from the work of 2026-11-17 to 11-24.
 - **venv:** `source /opt/isaac/IsaacLab-main/.venv/bin/activate` and `export OMNI_KIT_ACCEPT_EULA=yes`.
   `/opt/isaac/.venv` is an empty venv without `activate`; do not use it.
 - **Install:** `uv pip install --python /opt/isaac/IsaacLab-main/.venv/bin/python --no-deps -e source/humanoid_sim`.
+  Do this on every new machine or clone (the server too) before training; without it `train.py` fails with
+  `No module named 'humanoid_sim'` (11-25 on the server). Check with
+  `python -c "import humanoid_sim; print(humanoid_sim.__file__)"`: the path must be inside this repo (editable install).
   `arti_h1_olaf` is installed in the same venv; the task IDs differ (`HumanoidSim-Olaf-*` vs `Arti-H1-Olaf-*`).
 - **Tasks:** `HumanoidSim-Olaf-Walk-v0` and `HumanoidSim-Olaf-Stand-v0`. Evaluate with the `-Play-v0` variants, which use
   the final DR.
@@ -188,7 +191,7 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 | stage 3 | walk_10 compliance switch bank | adopted; no tremor on the robot |
 | stage 4 | compliance DR | much more stable in sim, but an 8.8 Hz tremor on the robot |
 | stage 5 | restarted from stage 3, acc 3 → 10 | most stable in sim, but on the robot (11-24) the worst tremor so far (7.4 Hz, gyro 0.39 rad/s) |
-| stage 6 | from stage 3, **no compliance DR**, b_g,z frozen, 20 Hz low-pass, walk_10 bank | planned (server, `scripts/server_stand_stage6.sh`) |
+| stage 6 | from stage 3, **no compliance DR**, b_g,z frozen, 20 Hz low-pass, walk_10 bank | running on the server since 11-25 01:12 (`logs/train/stand_s6_1125_0112.log` there) |
 
 ## 7. real2sim (all in the env cfg)
 
