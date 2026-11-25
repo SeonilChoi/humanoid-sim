@@ -42,7 +42,7 @@ from the work of 2026-11-17 to 11-24.
   repo root, see section 3). Run standing locally only if the user asks (then 4096 envs, as stand_07 did); one training
   run at a time on the local GPU.
 - **Launching a training run:**
-  - Name rounds `walk_NN` / stand `stage N` (next: walk_15, stage 6). The run directory name is the skrl timestamp; record
+  - Name rounds `walk_NN` / stand `stage N` (next: walk_16, stage 7). The run directory name is the skrl timestamp; record
     the name ↔ directory mapping in the section 3 checkpoint table and the section 6 history.
   - Write a launcher `logs/train/<name>.sh` (venv, EULA, `cd` to the repo, the full train command with every override,
     a comment saying why) and start it detached from the repo root:
@@ -70,7 +70,7 @@ from the work of 2026-11-17 to 11-24.
 | What | Where |
 |---|---|
 | Past runs (selected checkpoints, params, TensorBoard) | `logs/skrl/olaf_{walk,stand}/` in this repo (force-added: `logs/` is in .gitignore, so `git add -f`). All checkpoints of these runs are still in `/opt/isaac/projects/arti_h1_olaf/logs/skrl/` on the dev PC |
-| Repo-root `agent_*.pt` | the server's hand-off spot. Now `agent_240000.pt` / `agent_480000.pt` = **stand stage 5** (not walk). Copy each new one to `logs/skrl/olaf_stand/server_stageN/checkpoints/` and identify it by the observation preprocessor count (stage start count + N × 8192) |
+| Repo-root `agent_*.pt` | the server's hand-off spot. Stage 6 came under `server/` and was moved to `olaf_stand/server_stage6/checkpoints/`. Copy each new one to `logs/skrl/olaf_stand/server_stageN/checkpoints/` and identify it by the observation preprocessor count (stage start count + N × 8192) |
 | Controller checkout | `/opt/isaac/projects/humanoid_controller_olaf` (branch `arti-h1-olaf`, remote SeonilChoi/humanoid_controller) |
 | Controller config / ONNX | `config/robot/ARTI-H1/robot_olaf.yaml`, `agent_olaf_*.onnx`, `olaf_walk_keys.yaml` |
 | Robot PC | Jetson Orin `~/humanoid_controller_olaf`. The C++ build works only there; the dev PC lacks yaml-cpp and onnxruntime |
@@ -91,7 +91,7 @@ All checkpoints listed here except walk_14 were trained with a **free** b_g,z (t
 | walk_13 | `olaf_walk/2026-11-23_14-51-56_ppo_torch/checkpoints/agent_480000.pt` (robot 11-24: spun and fell in 3.5 s) |
 | walk_14 (stopped at 96k on 11-24 for walk_15) | `olaf_walk/2026-11-24_13-06-19_ppo_torch/checkpoints/agent_96000.pt` (local only; launcher `logs/train/walk_14.sh`) |
 | **walk_15 (walk candidate since 11-25, not yet on the robot)** | `olaf_walk/2026-11-24_19-51-43_ppo_torch/checkpoints/agent_480000.pt` (= `agent_olaf_walk15_480000.onnx`; launcher `logs/train/walk_15.sh`) |
-| **stand_07 (smooth, deployed since 11-24)** | `olaf_stand/2026-11-20_13-25-38_ppo_torch/checkpoints/agent_{72000,96000}.pt` (72000 = `agent_olaf_stand_smooth_72000.onnx`) |
+| **stand_07 (smooth, deployed 11-24, fallback since 11-26)** | `olaf_stand/2026-11-20_13-25-38_ppo_torch/checkpoints/agent_{72000,96000}.pt` (72000 = `agent_olaf_stand_smooth_72000.onnx`) |
 | stand stage 3 | `olaf_stand/server_stage3/checkpoints/agent_480000.pt` (no tremor on the robot) |
 | stand stage 4 | `olaf_stand/server_stage4/checkpoints/agent_264000.pt` (8.8 Hz tremor on the robot) |
 | stand stage 5 | `olaf_stand/server_stage5/checkpoints/agent_{240000,480000}.pt` (robot 11-24: worst tremor so far). Its `params/` is a copy of stage 4's, for export only (NOTE.txt). Server stages have no TensorBoard files here |
@@ -191,7 +191,7 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 | stage 3 | walk_10 compliance switch bank | adopted; no tremor on the robot |
 | stage 4 | compliance DR | much more stable in sim, but an 8.8 Hz tremor on the robot |
 | stage 5 | restarted from stage 3, acc 3 → 10 | most stable in sim, but on the robot (11-24) the worst tremor so far (7.4 Hz, gyro 0.39 rad/s) |
-| stage 6 | from stage 3, **no compliance DR**, b_g,z frozen, 20 Hz low-pass, walk_10 bank | running on the server since 11-25 01:12 (`logs/train/stand_s6_1125_0112.log` there) |
+| stage 6 | from stage 3, **no compliance DR**, b_g,z frozen, 20 Hz low-pass, walk_10 bank | done 11-25 (`olaf_stand/server_stage6`, params patched from stage 3, NOTE.txt). Sim vs stand_07 / stage 3 (`logs/eval/1126/`): stand falls 127 / 380 / 272 (push), 23 / 125 / 118 (no push); walk_15 → stand switch 23 / 65 / 41 % (compliance off: 12 / 51 / 29 %). Action power >5 Hz 0.19 (stand_07 0.05, stage 3 0.06; stage 5 0.21 shook), but \|da\|/step 0.019 vs 0.033 and ankle q_des 7.5-11 Hz rms lower. `stand_model_file` since 11-26; robot tremor test decides |
 
 ## 7. real2sim (all in the env cfg)
 
@@ -259,7 +259,7 @@ python scripts/skrl/train.py --task HumanoidSim-Olaf-Stand-v0 physics=isaacsim_p
 
 ## 10. Open issues and next steps (in priority order)
 
-1. **Compliance-off comparison:** walk_15 (done; beats walk_10 in every sim check, now `model_file`, robot test pending) and stand stage 6 (server, `scripts/server_stand_stage6.sh`). Evaluate with
+1. **Compliance-off comparison:** walk_15 (done; beats walk_10 in every sim check, now `model_file`, robot test pending) and stand stage 6 (done; better than stand_07 in sim stability and switching, now `stand_model_file`, robot test pending). Evaluate with
    section 4 against walk_10 / stand_07 rerun with the same code; the deciding test is the robot (stand tremor metrics,
    in-place yaw, left and right turns).
 2. **Robot test of the deployed pair** (walk_10 + stand_07, b_g,z frozen): **left turns** (only right turns were

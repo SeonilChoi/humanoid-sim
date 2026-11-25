@@ -1,0 +1,4 @@
+Stage 6 (server, 11-25, scripts/server_stand_stage6.sh): the server sent only the checkpoints. params/ is stage 3's
+with the stage 6 overrides patched in where the key exists (action_lowpass_hz 20, rate 15 / acc 3, b_g,z frozen,
+walk_pose_fraction 0.6, walk10 bank); series compliance was [0,0] in training. The export fields (joint names,
+default pose, action scales, joint limits, obs size) are the same as stage 3's.

@@ -19,6 +19,7 @@ cfg = resolve_task_config(args.task, None, overrides=["physics=isaacsim_physx"])
 cfg.scene.num_envs = args.num_envs
 import os
 if os.environ.get("NO_PUSH"): cfg.events.push_robot = None
+if os.environ.get("NO_COMPLIANCE"): cfg.joint_series_compliance_scale_range = (0.0, 0.0)
 if os.environ.get("NO_TT"): cfg.torso_torque_noise_std = (0.0, 0.0, 0.0)
 if os.environ.get("NO_EXTRA_DELAY"):
     cfg.actuator_delay_extra_ms = {}

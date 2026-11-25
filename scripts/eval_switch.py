@@ -101,6 +101,8 @@ def make_env(task, n, **over):
     cfg.seed = args.seed
     if not args.push:
         cfg.events.push_robot = None
+    if os.environ.get("NO_COMPLIANCE"):
+        cfg.joint_series_compliance_scale_range = (0.0, 0.0)
     for k, v in over.items():
         setattr(cfg, k, v)
     env = gym.make(task, cfg=cfg)
