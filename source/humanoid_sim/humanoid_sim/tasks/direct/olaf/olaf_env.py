@@ -58,7 +58,7 @@ class ArtiH1OlafEnv(ArtiH1VelocityEnv):
     REWARD_TERMS = (
         "torso_pos_xy", "torso_ori", "lin_vel_xy", "lin_vel_z", "ang_vel_xy", "ang_vel_z", "leg_joint_pos",
         "leg_joint_vel", "contact", "survival", "joint_torques", "joint_acc", "leg_action_rate", "leg_action_acc",
-        "temperature", "joint_limits_lower", "joint_limits_upper", "foot_collision", "impact", "yaw_drift",
+        "temperature", "joint_limits_lower", "joint_limits_upper", "foot_collision", "impact", "yaw_drift", "ang_vel_hf",
     )
 
     def __init__(self, cfg: ArtiH1OlafEnvCfg, render_mode: str | None = None, **kwargs):
@@ -170,6 +170,7 @@ class ArtiH1OlafEnv(ArtiH1VelocityEnv):
         self.compl_on = bool((self.compl_base > 0).any())
         self.tau_last = torch.zeros(n, len(names), device=dev)
         self.wz_err_ema = torch.zeros(n, device=dev)  # low-passed torso yaw-rate error vs the reference (yaw_drift)
+        self.w_err_ema = torch.zeros(n, 3, device=dev)  # low-passed torso angular-velocity error, body frame (ang_vel_hf)
         if getattr(cfg, "est_z_offset_range", None) is not None:
             self.est_z_off = torch.zeros(n, device=dev)
             self.est_z_rate = torch.zeros(n, device=dev)
@@ -562,6 +563,11 @@ class ArtiH1OlafEnv(ArtiH1VelocityEnv):
         a2 = torch.clamp(self.previous_actions2, -1.0, 1.0)
         gq = cfg.joint_limit_gamma
         self.wz_err_ema += (dt / cfg.yaw_drift_tau_s) * ((ang_w[:, 2] - self.ref_w[:, 2]) - self.wz_err_ema)
+        # the step-rate part of the torso roll / yaw rate error (high-passed at ang_vel_hf_tau_s): yaw_drift's 1 s EMA lets the
+        # gait twist back and forth every step (walk_15 on the robot: yaw-rate rms 2x walk_10, mean 0), this costs it
+        w_err_b = quat_apply_inverse(quat, ang_w - self.ref_w)
+        self.w_err_ema += (dt / cfg.ang_vel_hf_tau_s) * (w_err_b - self.w_err_ema)
+        w_hf = (w_err_b - self.w_err_ema) * torch.tensor(cfg.ang_vel_hf_axes, device=self.device)
         terms = {
             "torso_pos_xy": cfg.w_torso_pos_xy * torch.exp(-cfg.k_torso_pos * torch.sum(torch.square(pos[:, :2] - self.ref_pos[:, :2]), -1)),
             "torso_ori": cfg.w_torso_ori * torch.exp(-cfg.k_torso_ori * torch.sum(torch.square(quat_box_minus(quat, self.ref_quat)), -1)),
@@ -583,6 +589,7 @@ class ArtiH1OlafEnv(ArtiH1VelocityEnv):
             "foot_collision": -cfg.w_foot_collision * self._foot_collision(),
             "impact": -cfg.w_impact * torch.sum(impact, -1),
             "yaw_drift": -cfg.w_yaw_drift * torch.square(self.wz_err_ema),
+            "ang_vel_hf": -cfg.w_ang_vel_hf * torch.sum(torch.square(w_hf), -1),
         }
         reward = sum(terms.values()) * dt
         for k, v in terms.items():
@@ -698,6 +705,7 @@ class ArtiH1OlafEnv(ArtiH1VelocityEnv):
             self.compl[env_ids] = self.compl_base * torch.empty(k, 1, device=dev).uniform_(lo, hi)
             self.tau_last[env_ids] = 0.0
         self.wz_err_ema[env_ids] = 0.0
+        self.w_err_ema[env_ids] = 0.0
         self.tt_lo[env_ids] = 0.0
         self.tt_hi[env_ids] = 0.0
         # thermal state: ambient per episode, initial temperatures up to above T_max (paper: train near the limit)

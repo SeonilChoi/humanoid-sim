@@ -41,7 +41,7 @@ for f in args.logs:
     for D in load_real(f):
         G = torch.tensor(D["g_full"], dtype=torch.float32, device=dev); T = len(G)
         obs, _ = env.reset(); alive = torch.ones(u.num_envs, dtype=torch.bool, device=dev)
-        rec = {k: [] for k in ("gyro", "rp", "qdes", "q", "tau", "act", "contact", "alive", "yaw", "fyaw", "phase", "obs", "taul", "eyaw", "epath", "bgz")}
+        rec = {k: [] for k in ("gyro", "rp", "qdes", "q", "tau", "act", "contact", "alive", "yaw", "fyaw", "phase", "obs", "taul", "eyaw", "epath", "bgz", "acc", "imp", "fvz", "qd")}
         for k in range(T):
             u.command_timer[:] = 1e9
             i_, w_ = u._walk_blend(G[k].expand(u.num_envs, 3).clone()); u.g[:] = (w_[..., None] * u.walk_keys[i_]).sum(1); u.commands[:] = u.g
@@ -57,6 +57,10 @@ for f in args.logs:
             rec["tau"].append(torch.sqrt(u.tau_sq_acc / u.cfg.decimation)); rec["act"].append(u.actions.clone()); rec["contact"].append(u.feet_contact.float())
             rec["yaw"].append(_yaw_of(q)); rec["obs"].append(obs["policy"][:, :15].clone()); rec["phase"].append(u.phase.clone())
             rec["eyaw"].append(u.est_root_yaw.clone()); rec["epath"].append(u.est_path[:, 2].clone()); rec["bgz"].append(u.ekf.bg[:, 2].float().clone())
+            # touchdown / shake diagnostics (11-27): IMU specific force (pre-delay sample), per-foot impact dv^2 sum over the
+            # substeps, foot vz at the last substep (m/s), joint velocities (sim joint order)
+            rec["acc"].append(u.accel_buf[:, -1].clone()); rec["imp"].append(u.impact_acc.clone())
+            rec["fvz"].append(u.foot_vz_prev / u.cfg.impact_velocity_scale); rec["qd"].append(u.robot.data.joint_vel.torch.clone())
             rec["fyaw"].append(torch.stack([_yaw_of(u.robot.data.body_quat_w.torch[:, bi]) for bi in u.foot_body_indices], -1))
         R = {k: torch.stack(v).cpu().numpy() for k, v in rec.items()}  # (T, N, ...)
         Tn = len(D["t"]); sg = segments(D["g"])

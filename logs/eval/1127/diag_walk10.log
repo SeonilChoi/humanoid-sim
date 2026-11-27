@@ -1,0 +1,89 @@
+AppLauncher is deprecated; use isaaclab.app.launch_simulation.
+[INFO]: Running headless because '--viz kit' was not requested. Pass it to open a viewport.
+[INFO]: Using device: cuda:0
+[INFO]: Loading experience file: /opt/isaac/IsaacLab-main/apps/isaaclab.python.headless.kit
+WARNING: All log messages before absl::InitializeLog() is called are written to STDERR
+E0000 00:00:1795734958.471011 3183051 descriptor_database.cc:633] File already exists in database: grpc/health/v1/health.proto
+W0000 00:00:1795734958.471035 3183051 message.cc:301] Protobuf GeneratedMessageFactory: File is already registered: grpc/health/v1/health.proto
+Warning: Possible version incompatibility. Attempting to load carb::ujitso::IFactory with version v0.3 against v0.2.
+[ISAACLAB] KitLauncher initialization complete
+Warp 1.17.0 initialized:
+   CUDA Toolkit 12.9, Driver 13.2
+   Devices:
+     "cpu"      : "x86_64"
+     "cuda:0"   : "NVIDIA GeForce RTX 5070 Ti" (15 GiB, sm_120, mempool enabled)
+   Kernel cache:
+     /home/monster1502/.cache/warp/1.17.0
+[INFO]: Parsing configuration from: humanoid_sim.tasks.direct.olaf.olaf_env_cfg:ArtiH1OlafWalkEnvCfg_PLAY
+[INFO]: Base environment:
+	Environment device    : cuda:0
+	Environment seed      : None
+	Physics step-size     : 0.0016666666666666668
+	Rendering step-size   : 0.02
+	Environment step-size : 0.02
+[INFO]: Loading local copy of remote asset 'https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.2/Isaac/IsaacLab/Environments/Grid/default_ground_plane_checker_v1/default_ground_plane.usda' from '/tmp/https/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.2/Isaac/IsaacLab/Environments/Grid/default_ground_plane_checker_v1/default_ground_plane.usda'.
+[INFO]: Loading local copy of remote asset 'https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.2/Isaac/IsaacLab/Environments/Grid/default_ground_plane_checker_v1/Materials/Textures/default_ground_plane_albedo.png' from '/tmp/https/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.2/Isaac/IsaacLab/Environments/Grid/default_ground_plane_checker_v1/Materials/Textures/default_ground_plane_albedo.png'.
+[INFO]: Loading local copy of remote asset 'https://omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.2/Isaac/IsaacLab/Environments/Grid/default_ground_plane_checker_v1/Materials/Textures/default_ground_plane_roughness.png' from '/tmp/https/omniverse-content-production.s3-us-west-2.amazonaws.com/Assets/Isaac/6.2/Isaac/IsaacLab/Environments/Grid/default_ground_plane_checker_v1/Materials/Textures/default_ground_plane_roughness.png'.
+[INFO]: Registered backend 'physx' for factory Articulation.
+[INFO]: Registered backend 'physx' for factory Pva.
+[INFO]: Physics scene prim path: /physicsScene
+[INFO]: Time taken for scene creation Last: 2.102503 s, Mean: 2.102503 s, Std: 0.000000 s, N: 1
+[INFO]: Scene manager: <class InteractiveScene>
+	Number of environments: 32
+	Environment spacing   : 1.0
+	Source prim name      : /World/envs/env_0
+	Global prim paths     : ['/World/ground']
+[INFO]: Starting the simulation. This may take a few seconds. Please wait...
+[INFO]: Simulation parameters for joints in /World/envs/env_.*/Robot:
++-------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+|                                                    Simulation Joint Information (Prim path: /World/envs/env_.*/Robot)                                                   |
++-------+-------------------+-----------+---------+----------+-----------------+------------------+------------------+------------------+-----------------+---------------+
+| Index | Name              | Stiffness | Damping | Armature | Static Friction | Dynamic Friction | Viscous Friction | Position Limits  | Velocity Limits | Effort Limits |
++-------+-------------------+-----------+---------+----------+-----------------+------------------+------------------+------------------+-----------------+---------------+
+|   0   | left_hip_yaw      |   80.140  |  1.152  |  0.000   |      0.000      |      0.000       |      0.000       | [-0.785, 0.785]  |      30.000     |     23.700    |
+|   1   | right_hip_yaw     |   80.140  |  1.152  |  0.000   |      0.000      |      0.000       |      0.000       | [-0.785, 0.785]  |      30.000     |     23.700    |
+|   2   | left_hip_roll     |   72.130  |  1.302  |  0.000   |      0.000      |      0.000       |      0.000       | [-0.785, 0.785]  |      30.000     |     23.700    |
+|   3   | right_hip_roll    |   72.130  |  1.302  |  0.000   |      0.000      |      0.000       |      0.000       | [-0.785, 0.785]  |      30.000     |     23.700    |
+|   4   | left_hip_pitch    |   72.130  |  1.002  |  0.000   |      0.000      |      0.000       |      0.000       | [-0.349, 1.222]  |      30.000     |     23.700    |
+|   5   | right_hip_pitch   |   72.130  |  1.002  |  0.000   |      0.000      |      0.000       |      0.000       | [-0.349, 1.222]  |      30.000     |     23.700    |
+|   6   | left_knee         |  100.170  |  1.302  |  0.000   |      0.000      |      0.000       |      0.000       | [-1.658, -0.087] |      30.000     |     23.700    |
+|   7   | right_knee        |  100.170  |  1.302  |  0.000   |      0.000      |      0.000       |      0.000       | [-1.658, -0.087] |      30.000     |     23.700    |
+|   8   | left_ankle_pitch  |   30.000  |  0.300  |  0.000   |      0.000      |      0.000       |      0.000       | [-1.222, 0.349]  |      5.000      |     24.000    |
+|   9   | right_ankle_pitch |   30.000  |  0.300  |  0.000   |      0.000      |      0.000       |      0.000       | [-1.222, 0.349]  |      5.000      |     24.000    |
+|   10  | left_ankle_roll   |   27.000  |  0.400  |  0.000   |      0.000      |      0.000       |      0.000       | [-0.785, 0.785]  |      5.000      |     24.000    |
+|   11  | right_ankle_roll  |   27.000  |  0.400  |  0.000   |      0.000      |      0.000       |      0.000       | [-0.785, 0.785]  |      5.000      |     24.000    |
++-------+-------------------+-----------+---------+----------+-----------------+------------------+------------------+------------------+-----------------+---------------+
+[INFO]: Time taken for simulation start Last: 0.427345 s, Mean: 0.427345 s, Std: 0.000000 s, N: 1
+[INFO]: Event Manager: <EventManager> contains 1 active terms.
++---------------------------------------+
+| Active Event Terms in Mode: 'startup' |
++----------+----------------------------+
+|  Index   | Name                       |
++----------+----------------------------+
+|    0     | physics_material           |
+|    1     | add_pelvis_mass            |
+|    2     | pelvis_com                 |
+|    3     | actuator_gains             |
++----------+----------------------------+
+
+[INFO]: Completed setting up the environment...
+[INFO] actuator model: delay 17.9 ms mean, armature {'hip_yaw': 0.005, 'hip_roll': 0.005, 'hip_pitch': 0.0, 'knee': 0.01, 'ankle_pitch': 0.02, 'ankle_roll': 0.02}, coulomb {'hip_yaw': 0.2, 'hip_roll': 0.15, 'hip_pitch': 0.1, 'knee': 0.1, 'ankle_pitch': 0.3, 'ankle_roll': 0.2}
+[OLAF] mode walk: walk ref 250 clips x 48 bins (period 0.80 s), stand grid (4, 5, 5, 5); thermal gamma_T 0.0108; obs 80, critic 130
+[DR] widen level 0/9 (f 0.00): physics_material={'static_friction_range': (0.7, 1.0), 'dynamic_friction_range': (0.6, 0.9)}, add_pelvis_mass={'mass_distribution_params': (-0.2, 0.2)}, pelvis_com={'com_range': {'x': (-0.005, 0.005), 'y': (-0.005, 0.005), 'z': (-0.005, 0.005)}}, actuator_gains={'stiffness_distribution_params': (0.8, 0.95), 'damping_distribution_params': (0.9, 1.1)}
+[DR] widen level 0: gyro noise 0.010 bias (-0.01, 0.01), accel impact scale (0.0, 0.25) bias (-0.03, 0.03)
+FALLS {'log': '174517', 'falls': 13, 'envs': 32, 'T_s': 28.44, 'real_fell': True, 'times': [4.3, 5.12, 6.54, 6.66, 6.92, 8.58, 12.74, 13.52, 14.52, 15.16]}
+FALLS {'log': '174832', 'falls': 25, 'envs': 32, 'T_s': 138.9, 'real_fell': True, 'times': [2.42, 2.68, 3.22, 7.46, 8.94, 12.280000000000001, 13.68, 17.44, 19.12, 26.72]}
+FALLS {'log': '175413', 'falls': 5, 'envs': 32, 'T_s': 8.0, 'real_fell': False, 'times': [3.7600000000000002, 4.3, 5.62, 6.54, 7.62]}
+FALLS {'log': '175413', 'falls': 25, 'envs': 32, 'T_s': 77.3, 'real_fell': True, 'times': [4.32, 4.94, 8.72, 12.02, 12.74, 13.96, 15.58, 16.28, 16.9, 17.86]}
+FALLS {'log': '181056', 'falls': 28, 'envs': 32, 'T_s': 149.18, 'real_fell': False, 'times': [2.16, 3.94, 5.44, 7.44, 15.74, 16.72, 19.54, 25.84, 31.34, 32.26]}
+FALLS {'log': '181502', 'falls': 20, 'envs': 32, 'T_s': 39.86, 'real_fell': True, 'times': [3.16, 4.5200000000000005, 4.9, 5.04, 6.54, 7.86, 8.94, 10.58, 12.1, 13.5]}
+WROTE /opt/isaac/projects/humanoid_sim/scripts/real2sim/walk_replay/res_d1127_walk10.json
+WROTE raw
+[INFO]: SimulationContext cleared
+Loading user config located at: '/opt/isaac/IsaacLab-main/.venv/lib/python3.12/site-packages/isaacsim/kit/data/Kit/IsaacLab/3.0/user.config.json'
+2026-11-26T23:15:58Z [0ms] [Warning] [omni.usd_config.extension] Enable omni.materialx.libs extension to use MaterialX
+2026-11-26T23:15:59Z [1,065ms] [Warning] [isaaclab.envs.direct_rl_env] Seed not set for the environment. The environment creation may not be deterministic.
+2026-11-26T23:16:00Z [2,078ms] [Warning] [isaaclab.utils.assets] Serving remote assets from the local cache under '/tmp'. Each copy is checked against the server before use; delete the directory to force a full re-download.
+2026-11-26T23:16:02Z [3,196ms] [Warning] [isaaclab.sim.schemas.schemas] Skipping fragment updates on instanced prims matched by '/World/envs/env_0/Robot(/.*)?': ['/World/envs/env_0/Robot/pelvis/collisions/pelvis/node_STL_BINARY_', '/World/envs/env_0/Robot/left_hip_rotation/collisions/left_hip_rotation/node_STL_BINARY_', '/World/envs/env_0/Robot/left_hip/collisions/left_hip/node_STL_BINARY_', '/World/envs/env_0/Robot/left_thigh/collisions/left_thigh/node_STL_BINARY_', '/World/envs/env_0/Robot/left_shin/collisions/left_shin/node_STL_BINARY_', '/World/envs/env_0/Robot/left_foot_rotation/collisions/left_foot_rotation/node_STL_BINARY_', '/World/envs/env_0/Robot/left_foot_link/collisions/left_foot/node_STL_BINARY_', '/World/envs/env_0/Robot/right_hip_rotation/collisions/right_hip_rotation/node_STL_BINARY_', '/World/envs/env_0/Robot/right_hip/collisions/right_hip/node_STL_BINARY_', '/World/envs/env_0/Robot/right_thigh/collisions/right_thigh/node_STL_BINARY_', '/World/envs/env_0/Robot/right_shin/collisions/right_shin/node_STL_BINARY_', '/World/envs/env_0/Robot/right_foot_rotation/collisions/right_foot_rotation/node_STL_BINARY_', '/World/envs/env_0/Robot/right_foot_link/collisions/right_foot/node_STL_BINARY_'].
+2026-11-26T23:16:02Z [3,196ms] [Warning] [isaaclab.sim.schemas.schemas] No collision targets matched expression '/World/envs/env_0/Robot(/.*)?'; nothing was authored.
+2026-11-26T23:16:02Z [3,523ms] [Warning] [usdrt.population.plugin] Last global time was not created. Did you call setEnableUsdNoticeHandling?

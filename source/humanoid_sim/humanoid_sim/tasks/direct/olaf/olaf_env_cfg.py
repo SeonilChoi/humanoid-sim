@@ -124,6 +124,13 @@ class ArtiH1OlafEnvCfg(ArtiH1VelocityKBEnvCfg):
     # penalizes the yaw-rate error low-passed over yaw_drift_tau_s (the gait's own yaw oscillation averages out).
     w_yaw_drift = 0.0
     yaw_drift_tau_s = 1.0
+    # 2026-11-27: walk_15 (w_yaw_drift 50) twisted and rolled every step on the robot (gyro rms roll 0.62 / yaw 0.70 vs
+    # walk_10 0.48 / 0.35) and stomped harder (knee speed lost at touchdown, left 2.0 / right 1.6 rad/s vs 1.7 / 0.9).
+    # Squared torso angular-velocity error vs the reference, body frame, high-passed (minus its EMA over ang_vel_hf_tau_s),
+    # on the axes weighted by ang_vel_hf_axes (roll, pitch, yaw).
+    w_ang_vel_hf = 0.0
+    ang_vel_hf_tau_s = 0.5
+    ang_vel_hf_axes = (1.0, 0.0, 1.0)
     w_joint_torques = 1.0e-3
     w_joint_acc = 2.5e-6
     # reward = sum(w * term) * step_dt (Isaac Lab convention; a uniform scale)
